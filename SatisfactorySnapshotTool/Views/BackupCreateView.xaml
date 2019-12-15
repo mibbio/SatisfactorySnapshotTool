@@ -1,0 +1,55 @@
+﻿<UserControl x:Class="SatisfactorySnapshotTool.Views.BackupCreateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SatisfactorySnapshotTool.Views"
+             xmlns:vm="clr-namespace:SatisfactorySnapshotTool.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance {x:Type vm:BackupCreateViewModel}}"
+             d:DesignHeight="450" d:DesignWidth="400">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Grid.Row="0" Text="{Binding Path=CurrentStepLabel}" FontWeight="Bold"/>
+
+        <TextBlock Grid.Row="1" Text="{Binding Path=CurrentFile}" TextWrapping="NoWrap" Margin="0 8 0 2"/>
+        <Grid Grid.Row="2">
+            <ProgressBar Value="{Binding Path=CurrentFileProgress.Item1, Mode=OneWay}" Maximum="{Binding Path=CurrentFileProgress.Item2, Mode=OneWay}"/>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0:n2} {2} / {1:n2} {2}" Mode="OneWay">
+                        <Binding Path="CurrentFileProgress.Item1"/>
+                        <Binding Path="CurrentFileProgress.Item2"/>
+                        <Binding Path="CurrentFileProgress.Item3"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="Step progress" Margin="0 8 0 2"/>
+        <Grid Grid.Row="4">
+            <ProgressBar Value="{Binding Path=CurrentFileNumber}" Maximum="{Binding Path=TotalFiles}"/>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}File {0} of {1}">
+                        <Binding Path="CurrentFileNumber"/>
+                        <Binding Path="TotalFiles"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </Grid>
+
+        <Button Grid.Row="5" Content="Cancel" VerticalAlignment="Top" Margin="16" Padding="16 4" HorizontalAlignment="Right"
+                Command="{Binding Path=CmdCancelBackup}"/>
+    </Grid>
+</UserControl>
+
+    

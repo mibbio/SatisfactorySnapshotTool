@@ -1,0 +1,101 @@
+﻿<Window x:Class="SatisfactorySnapshotTool.Views.MainWindowView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:local="clr-namespace:SatisfactorySnapshotTool"
+        xmlns:viewModels="clr-namespace:SatisfactorySnapshotTool.ViewModels"
+        mc:Ignorable="d"
+        Title="{Binding Path=Title}" Height="{Binding Path=Height, Mode=TwoWay}" Width="{Binding Path=Width, Mode=TwoWay}">
+
+    <Window.Resources>
+        <viewModels:MainWindowViewModel x:Key="ViewModel"/>
+        <BooleanToVisibilityConverter x:Key="VisibilityConverter"/>
+    </Window.Resources>
+
+    <Window.DataContext>
+        <StaticResource ResourceKey="ViewModel"/>
+    </Window.DataContext>
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Closing">
+            <i:InvokeCommandAction Command="{Binding Path=OnWindowClosing}" PassEventArgsToCommand="True"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+
+    <Grid>
+        <DockPanel LastChildFill="True">
+            <DockPanel.Style>
+                <Style TargetType="{x:Type DockPanel}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Path=BackupManager.GameRunning}" Value="True">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <BlurEffect/>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DockPanel.Style>
+            <StatusBar DockPanel.Dock="Bottom" Background="OrangeRed" Visibility="{Binding Path=UpdateAvailable, Converter={StaticResource VisibilityConverter}}">
+                <StatusBarItem HorizontalAlignment="Center">
+                    <Button Content="{Binding Path=UpdateLabel}" Command="{Binding Path=CmdDoUpdate}" Padding="8 4" ContentStringFormat="{}Download &amp; install update {0}"/>
+                </StatusBarItem>
+            </StatusBar>
+            <StatusBar DockPanel.Dock="Bottom" Background="LimeGreen" Visibility="{Binding Path=UpdateRunning, Converter={StaticResource VisibilityConverter}}">
+                <StatusBarItem HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Path=UpdateProgressLabel}"/>
+                </StatusBarItem>
+            </StatusBar>
+            <Border DockPanel.Dock="Top" BorderThickness="0 0 0 1" BorderBrush="Gray" Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}">
+                <Grid Margin="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Backup location" VerticalAlignment="Center" Margin="0 0 4 2" HorizontalAlignment="Right"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Path=BackupPath, Mode=OneWay}" Margin="0 0 0 2" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False"/>
+                    <Button Grid.Row="0" Grid.Column="2" Content="Change" Padding="8 4" Margin="0 0 0 2" Command="{Binding Path=CmdChangeBackupPath}"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Game location" VerticalAlignment="Center" Margin="0 0 4 0" HorizontalAlignment="Right"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Path=GamePath, Mode=OneWay}" VerticalContentAlignment="Center" IsReadOnly="True" IsReadOnlyCaretVisible="False"/>
+                    <Button Grid.Row="1" Grid.Column="2" Content="Change" Padding="8 4" Command="{Binding Path=CmdChangeGamePath}"/>
+                </Grid>
+            </Border>
+
+            <Grid DockPanel.Dock="Bottom">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ContentControl Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Content="{Binding Path=BackupPanel, Mode=OneWay}" Visibility="{Binding Path=ShowBackups, Mode=OneWay, Converter={StaticResource VisibilityConverter}}"/>
+
+                <ContentControl Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Content="{Binding Path=CreatePanel, Mode=OneWay}" Visibility="{Binding Path=BackupRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}"/>
+                <Button Grid.Column="1" Grid.Row="1" Content="Create backup" Margin="4" Padding="4" Command="{Binding Path=CmdCreateBackup}"/>
+            </Grid>
+        </DockPanel>
+
+        <Border Background="Black" Opacity=".5" Visibility="{Binding Path=BackupManager.GameRunning, Converter={StaticResource VisibilityConverter}}">
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                <TextBlock Text="Game is running..." HorizontalAlignment="Center" Foreground="White" FontSize="24"/>
+                <TextBlock Text="UI is blocked until game is closed." HorizontalAlignment="Center" Foreground="White" Margin="0 0 0 8"/>
+                <TextBlock Text="Closing this application while game is running from backup" HorizontalAlignment="Center" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="may corrupt your savegames!" HorizontalAlignment="Center" FontWeight="Bold" Foreground="White"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

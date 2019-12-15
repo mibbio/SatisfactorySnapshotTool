@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29509.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatisfactorySnapshotTool", "SatisfactorySnapshotTool\SatisfactorySnapshotTool.csproj", "{A478CA0E-4E25-4CFF-A04F-9BB8447BF381}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{21CB7747-9C6F-4263-BD97-5DBA9CF511DC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A478CA0E-4E25-4CFF-A04F-9BB8447BF381}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A478CA0E-4E25-4CFF-A04F-9BB8447BF381}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A478CA0E-4E25-4CFF-A04F-9BB8447BF381}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A478CA0E-4E25-4CFF-A04F-9BB8447BF381}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21CB7747-9C6F-4263-BD97-5DBA9CF511DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21CB7747-9C6F-4263-BD97-5DBA9CF511DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21CB7747-9C6F-4263-BD97-5DBA9CF511DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21CB7747-9C6F-4263-BD97-5DBA9CF511DC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F930A346-C9D4-4A45-BDF2-67B1697112DC}
+	EndGlobalSection
+EndGlobal

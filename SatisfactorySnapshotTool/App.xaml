@@ -1,0 +1,23 @@
+﻿<Application x:Class="SatisfactorySnapshotTool.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SatisfactorySnapshotTool"
+             xmlns:views="clr-namespace:SatisfactorySnapshotTool.Views"
+             xmlns:viewmodels="clr-namespace:SatisfactorySnapshotTool.ViewModels"
+             StartupUri="Views/MainWindowView.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Views -->
+                <ResourceDictionary>
+                    <DataTemplate DataType="{x:Type viewmodels:BackupViewModel}">
+                        <views:BackupView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:BackupCreateViewModel}">
+                        <views:BackupCreateView/>
+                    </DataTemplate>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
