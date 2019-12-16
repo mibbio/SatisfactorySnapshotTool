@@ -66,11 +66,15 @@ namespace SatisfactorySnapshotTool.Backup
             return AddFile(path);
         }
 
-        public bool AddDependency(Guid backupId, string path)
+        public bool AddDependency(Guid backupId, string path, string checksum)
         {
             if (!Dependencies.ContainsKey(path))
             {
                 Dependencies.Add(path, backupId);
+                if (!Checksums.ContainsKey(checksum))
+                {
+                    Checksums.Add(checksum, path);
+                }
                 AddDirectory(Path.GetDirectoryName(path));
                 return true;
             }

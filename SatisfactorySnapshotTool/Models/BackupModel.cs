@@ -41,6 +41,11 @@
 
         public Dictionary<string, string> Checksums { get; private set; }
 
+        public Dictionary<Guid, HashSet<string>> Dependencies { get; private set; }
+
+        [JsonIgnore]
+        public Tuple<int, int> DependencyCount => Tuple.Create(Dependencies.Count, Dependencies.Sum(kvp => kvp.Value.Count));
+
         [JsonIgnore]
         public List<SavegameHeader> Saves { get; private set; } = new List<SavegameHeader>();
 
@@ -48,6 +53,7 @@
         {
             Guid = guid;
             Checksums = new Dictionary<string, string>();
+            Dependencies = new Dictionary<Guid, HashSet<string>>();
         }
 
         [JsonConstructor]
@@ -88,6 +94,15 @@
             {
                 return false;
             }
+        }
+
+        public bool AddDependency(Guid guid, string file)
+        {
+            if (!Dependencies.ContainsKey(guid))
+            {
+                Dependencies.Add(guid, new HashSet<string>());
+            }
+            return Dependencies[guid].Add(file);
         }
     }
 }

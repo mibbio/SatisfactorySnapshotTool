@@ -72,9 +72,17 @@
                 <TextBlock Grid.Row="2" Grid.Column="1" Margin="4" Text="{Binding Path=CreatedAt}"/>
 
                 <TextBlock Grid.Row="3" Text="Size" Margin="4"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Margin="4" Text="{Binding Path=ReadableBackupSize}"/>
-                
-                <!--<TextBlock Grid.Row="4" Text="Saves" Margin="4"/>-->
+                <!--<TextBlock Grid.Row="3" Grid.Column="1" Margin="4" Text="{Binding Path=ReadableBackupSize}">-->
+                <TextBlock Grid.Row="3" Grid.Column="1" Margin="4">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} (depends on {2} files of {1} backups)">
+                            <Binding Path="ReadableBackupSize"/>
+                            <Binding Path="DependencyCount.Item1"/>
+                            <Binding Path="DependencyCount.Item2"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+
                 <DataGrid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="4" ItemsSource="{Binding Path=Saves}"
                           AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True">
                     <DataGrid.Columns>

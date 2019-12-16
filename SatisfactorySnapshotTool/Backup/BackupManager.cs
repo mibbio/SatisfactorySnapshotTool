@@ -63,7 +63,7 @@
                         var model = new BackupModel(Guid.Parse(Path.GetFileNameWithoutExtension(path)));
                         var json = File.ReadAllText(Path.Combine(path, "backup.json"));
                         JsonConvert.PopulateObject(json, model);
-                        foreach (var saveRoot in Directory.EnumerateDirectories(Path.Combine(path, "saves")))
+                        foreach (var saveRoot in Directory.EnumerateDirectories(Path.Combine(path, _backupSaveSubdir)))
                         {
                             foreach (var save in Directory.EnumerateFiles(saveRoot))
                             {
@@ -107,20 +107,22 @@
                 OnBackupStep?.Invoke(this, new BackupEventArgs(BackupStep.CopyGameFile, gameFileGroup.FilesToCopy.Count));
                 var gameSize = await CopyFilesAsync(gameFileGroup, sourceRootPath, Path.Combine(targetDirectory, _backupGameSubdir), _cts.Token);
 
+                // create backup metadata
+                GameBranch branch = gameFileGroup.Version.Contains("-ea-") ? GameBranch.Stable : GameBranch.Experimental;
+                var model = new BackupModel(backupGuid, branch, gameFileGroup.Build, DateTime.UtcNow);
+
                 // hardlink files
                 foreach (var dependency in gameFileGroup.Dependencies)
                 {
                     var sourceFile = Path.Combine(targetDirectory, _backupGameSubdir, dependency.Key);
                     var targetFile = Path.Combine(_settings.BackupPath, dependency.Value.ToString(), _backupGameSubdir, dependency.Key);
                     FileHelper.CreateHardLink(sourceFile, targetFile);
+                    model.AddDependency(dependency.Value, dependency.Key);
                 }
 
                 OnBackupStep?.Invoke(this, new BackupEventArgs(BackupStep.CopySaveFile, savesFileGroup.FilesToCopy.Count));
                 var savesSize = await CopyFilesAsync(savesFileGroup, _settings.SavegamePath, Path.Combine(targetDirectory, _backupSaveSubdir), _cts.Token);
 
-                // create backup metadata
-                GameBranch branch = gameFileGroup.Version.Contains("-ea-") ? GameBranch.Stable : GameBranch.Experimental;
-                var model = new BackupModel(backupGuid, branch, gameFileGroup.Build, DateTime.UtcNow);
                 model.AddChecksums(gameFileGroup.Checksums);
                 model.BackupSize = gameSize + savesSize;
                 Application.Current.Dispatcher.Invoke(() =>
@@ -201,15 +203,16 @@
                 {
                     var checksum = await Task.Run(() =>
                     {
-                        var fileCount = result.Checksums.Count + result.Dependencies.Count + 1;
-                        OnFileProcessing?.Invoke(this, new FileProcessEventArgs(path, fileCount));
+                        //var fileCount = result.Checksums.Count + result.Dependencies.Count + 1;
+                        //OnFileProcessing?.Invoke(this, new FileProcessEventArgs(path, fileCount));
+                        OnFileProcessing?.Invoke(this, new FileProcessEventArgs(path, result.Checksums.Count + 1));
                         ct.ThrowIfCancellationRequested();
                         return FileHelper.GetMD5WithProgress(path, OnFileProgress, ct);
                     }, ct);
 
                     if (_checksumCache.TryGetValue(checksum, out var dependency) && path.Contains(dependency.Item2))
                     {
-                        result.AddDependency(dependency.Item1, dependency.Item2);
+                        result.AddDependency(dependency.Item1, dependency.Item2, checksum);
                     }
                     else
                     {
@@ -314,6 +317,7 @@
                     {
                         Directory.Delete(backupDir, true);
                         Backups.Remove(backup);
+                        RecalculateBackupSizes(backup.Guid);
                         return true;
                     }
                     catch (Exception)
@@ -358,7 +362,7 @@
             var executable = Path.Combine(workingDir, "FactoryGame.exe");
             var psi = new ProcessStartInfo(executable, "-EpicPortal");
             psi.WorkingDirectory = workingDir;
-            
+
             var process = Process.Start(psi);
             while (!process.HasExited) await Task.Delay(100);
             process.Close();
@@ -399,6 +403,26 @@
         public void CancelBackup()
         {
             _cts.Cancel();
+        }
+
+        private void RecalculateBackupSizes(Guid deletedBackupGuid)
+        {
+            var dependents = Backups.Where(bm => bm.Dependencies.ContainsKey(deletedBackupGuid));
+
+            foreach (var bm in dependents)
+            {
+                var backupDir = Path.Combine(_settings.BackupPath, bm.Guid.ToString());
+                var additionalSize = bm.Dependencies[deletedBackupGuid].Sum(file =>
+                {
+                    var fi = new FileInfo(Path.Combine(backupDir, _backupGameSubdir, file));
+                    return fi.Length;
+                });
+                bm.BackupSize += additionalSize;
+                bm.Dependencies.Remove(deletedBackupGuid);
+
+                var json = JsonConvert.SerializeObject(bm, Formatting.Indented);
+                File.WriteAllText(Path.Combine(backupDir, "backup.json"), json);
+            }
         }
 
         private void UpdateChecksumCache()
