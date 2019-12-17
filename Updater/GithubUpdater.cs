@@ -10,12 +10,22 @@
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
 
+    /// <summary>
+    /// Uses Github releases as update source.
+    /// Considers releases tagged with version and having a zip file of the binaries having "bin" in its name.
+    /// </summary>
     public sealed class GithubUpdater : Updater
     {
         private readonly string _ghUser;
 
         private readonly string _ghRepo;
 
+        /// <summary>
+        /// Creates an instance of a <see cref="GithubUpdater"/>
+        /// </summary>
+        /// <param name="applicationRoot">Folder where the applications resides which should be updated</param>
+        /// <param name="githubUser">Name of the repository owner</param>
+        /// <param name="githubRepo">Name of the github repository</param>
         public GithubUpdater(string applicationRoot, string githubUser, string githubRepo, bool includePreReleases = false)
             : base(applicationRoot, includePreReleases)
         {

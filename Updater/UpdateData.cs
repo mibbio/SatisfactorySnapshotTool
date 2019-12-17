@@ -10,7 +10,7 @@
 
         public Uri DownloadUri { get; set; }
 
-        public string Filename => DownloadUri != null ? DownloadUri.Segments[DownloadUri.Segments.Length - 1] : String.Empty;
+        public string Filename => DownloadUri != null ? DownloadUri.Segments[DownloadUri.Segments.Length - 1] : string.Empty;
 
         public int Size { get; set; }
 
