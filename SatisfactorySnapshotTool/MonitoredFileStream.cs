@@ -8,6 +8,9 @@ namespace SatisfactorySnapshotTool
     using System.Security.AccessControl;
     using System.Threading;
 
+    /// <summary>
+    /// A <see cref="FileStream"/> extended by progress notification every 0.5% of total length
+    /// </summary>
     internal class MonitoredFileStream : FileStream
     {
         private long readSinceLastNotify = 0;
