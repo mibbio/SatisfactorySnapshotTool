@@ -17,6 +17,13 @@
 
         public static readonly string[] GameExecutableNames = new string[] { "FactoryGame.exe" };
 
+        /// <summary>
+        /// Calculates MD5 checksum of a file
+        /// </summary>
+        /// <param name="path">File the checksum is calculated for</param>
+        /// <param name="notifyHandler">Handler which will be invoked on progress change</param>
+        /// <param name="ct">Token to monitor the cancellation request</param>
+        /// <returns></returns>
         public static string GetMD5WithProgress(string path, EventHandler<FileProgressEventArgs> notifyHandler, CancellationToken ct)
         {
             if (!File.Exists(path)) return string.Empty;
@@ -42,6 +49,11 @@
             }
         }
 
+        /// <summary>
+        /// Creates a hard link to a file
+        /// </summary>
+        /// <param name="sourcePath">File representing the hard link</param>
+        /// <param name="targetPath">File the hard link points to</param>
         public static void CreateHardLink(string sourcePath, string targetPath)
         {
             if (!File.Exists(targetPath)) throw new ArgumentException("Target does not exist.");
@@ -52,8 +64,13 @@
             }
         }
 
-        //TODO win32 error handling
-        // based on https://stackoverflow.com/a/43229358
+        /// <summary>
+        /// Gets the version & build information of an Satisfactory main executable
+        /// </summary>
+        /// <param name="path">Path of the executable</param>
+        /// <param name="version">The full version string</param>
+        /// <param name="build">Build number part of the version string</param>
+        /// <returns><see langword="true"/> if retrieving data was successful, otherwise <see langword="fale"/></returns>
         public static bool TryGetBuild(string path, out string version, out int build)
         {
             version = string.Empty;
@@ -101,6 +118,11 @@
             return false;
         }
 
+        /// <summary>
+        /// Scales input to a human readably unit
+        /// </summary>
+        /// <param name="sizeInBytes">Input value in bytes</param>
+        /// <returns><see cref="Tuple{T1, T2}"/> with scaled value as first item and unit label as second</returns>
         public static Tuple<float, string> GetHumanReadableSize(float sizeInBytes)
         {
             int exponent = 0;
@@ -113,6 +135,15 @@
             return Tuple.Create(sizeInBytes, Units[exponent]);
         }
 
+        /// <summary>
+        /// Scales inputs to a human readably unit
+        /// </summary>
+        /// <param name="sizeInBytes1">First input value</param>
+        /// <param name="sizeInBytes2">Second input value</param>
+        /// <returns><see cref="Tuple{T1, T2, T3}"/> with smaller scaled value als first, larger scaled value as second and unit label as third item</returns>
+        /// <remarks>
+        /// Same scale is used for both inputs and is based on the larger input value.
+        /// </remarks>
         public static Tuple<float, float, string> GetHumanReadableSize(float sizeInBytes1, float sizeInBytes2)
         {
             var highSize = Math.Max(sizeInBytes1, sizeInBytes2);

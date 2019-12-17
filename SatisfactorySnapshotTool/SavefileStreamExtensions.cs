@@ -4,6 +4,9 @@
     using System.IO;
     using System.Text;
 
+    /// <summary>
+    /// <see cref="Stream"/> extension methods for easier reading of for Satisfactory savegames
+    /// </summary>
     public static class SavefileStreamExtensions
     {
         private const string EX_MSG_STREAM_CLOSED = "Source stream is not readable or already closed.";
@@ -12,6 +15,11 @@
         private static readonly byte[] intBuffer = new byte[4];
         private static readonly byte[] longBuffer = new byte[8];
 
+        /// <summary>
+        /// Reads an <see cref="Int32"/> value from a <see cref="Stream"/>
+        /// </summary>
+        /// <param name="source">The input <see cref="Stream"/></param>
+        /// <returns></returns>
         public static int ReadInt(this Stream source)
         {
             if (!source.CanRead)
@@ -33,6 +41,11 @@
             }
         }
 
+        /// <summary>
+        /// Reads a <see cref="long"/> value from a <see cref="Stream"/>
+        /// </summary>
+        /// <param name="source">The input <see cref="Stream"/></param>
+        /// <returns></returns>
         public static long ReadLong(this Stream source)
         {
             if (!source.CanRead)
@@ -55,6 +68,11 @@
             }
         }
 
+        /// <summary>
+        /// Reads a string from a stream which is formatted in a special way for Satisfactory savegames
+        /// </summary>
+        /// <param name="source">The input <see cref="Stream"/></param>
+        /// <returns></returns>
         public static string ReadSatisfactoryString(this Stream source)
         {
             try
