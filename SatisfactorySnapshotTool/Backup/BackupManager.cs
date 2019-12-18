@@ -63,13 +63,7 @@
                         var model = new BackupModel(Guid.Parse(Path.GetFileNameWithoutExtension(path)));
                         var json = File.ReadAllText(Path.Combine(path, "backup.json"));
                         JsonConvert.PopulateObject(json, model);
-                        foreach (var saveRoot in Directory.EnumerateDirectories(Path.Combine(path, _backupSaveSubdir)))
-                        {
-                            foreach (var save in Directory.EnumerateFiles(saveRoot))
-                            {
-                                model.Saves.Add(new SavegameHeader(save));
-                            }
-                        }
+                        PopulateSavegames(model);
                         Backups.Add(model);
                     }
                     catch (Exception ex) when (ex is FileNotFoundException || ex is FormatException || ex is IOException)
@@ -125,6 +119,7 @@
 
                 model.AddChecksums(gameFileGroup.Checksums);
                 model.BackupSize = gameSize + savesSize;
+                PopulateSavegames(model);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Backups.Add(model);
@@ -422,6 +417,18 @@
 
                 var json = JsonConvert.SerializeObject(bm, Formatting.Indented);
                 File.WriteAllText(Path.Combine(backupDir, "backup.json"), json);
+            }
+        }
+
+        private void PopulateSavegames(BackupModel backupModel)
+        {
+            var savesRoot = Path.Combine(_settings.BackupPath, backupModel.Guid.ToString(), _backupSaveSubdir);
+            foreach (var subdir in Directory.EnumerateDirectories(savesRoot))
+            {
+                foreach (var save in Directory.EnumerateFiles(subdir))
+                {
+                    backupModel.AddSave(new SavegameHeader(save));
+                } 
             }
         }
 

@@ -4,9 +4,11 @@
     using Newtonsoft.Json.Converters;
 
     using SatisfactorySnapshotTool.Backup;
+    using SatisfactorySnapshotTool.Mvvm;
 
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
 
     public enum GameBranch
@@ -15,8 +17,11 @@
         Experimental
     }
 
-    public class BackupModel
+    [JsonObject(MemberSerialization = MemberSerialization.OptOut)]
+    public class BackupModel : NotifyPropertyChangedBase
     {
+        private long _backupSize = 0;
+
         [JsonIgnore]
         public Guid Guid { get; private set; }
 
@@ -27,7 +32,17 @@
 
         public DateTime CreatedAt { get; set; }
 
-        public long BackupSize { get; set; }
+        public long BackupSize
+        {
+            get => _backupSize;
+            set
+            {
+                if (_backupSize == value) return;
+                _backupSize = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ReadableBackupSize));
+            }
+        }
 
         [JsonIgnore]
         public string ReadableBackupSize
@@ -57,7 +72,7 @@
         public Tuple<int, int> DependencyCount => Tuple.Create(Dependencies.Count, Dependencies.Sum(kvp => kvp.Value.Count));
 
         [JsonIgnore]
-        public List<SavegameHeader> Saves { get; private set; } = new List<SavegameHeader>();
+        public ObservableCollection<SavegameHeader> Saves { get; private set; } = new ObservableCollection<SavegameHeader>();
 
         public BackupModel(Guid guid)
         {
@@ -113,6 +128,17 @@
                 Dependencies.Add(guid, new HashSet<string>());
             }
             return Dependencies[guid].Add(file);
+        }
+
+        public bool AddSave(SavegameHeader savegameHeader)
+        {
+            if (savegameHeader == null) throw new ArgumentNullException();
+            if (!Saves.Contains(savegameHeader))
+            {
+                Saves.Add(savegameHeader);
+                return true;
+            }
+            return false;
         }
     }
 }
