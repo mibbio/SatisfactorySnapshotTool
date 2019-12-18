@@ -44,6 +44,16 @@
         public Dictionary<Guid, HashSet<string>> Dependencies { get; private set; }
 
         [JsonIgnore]
+        public IEnumerable<string> Files
+        {
+            get
+            {
+                var shared = Dependencies.Values.SelectMany(x => x).ToList();
+                return Checksums.Select(cs => cs.Value).Except(shared);
+            }
+        }
+
+        [JsonIgnore]
         public Tuple<int, int> DependencyCount => Tuple.Create(Dependencies.Count, Dependencies.Sum(kvp => kvp.Value.Count));
 
         [JsonIgnore]
