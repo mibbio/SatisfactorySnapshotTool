@@ -176,7 +176,7 @@
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                _settingsProvider.GamePath = Path.GetDirectoryName(dialog.FileName);
+                GamePath = Path.GetDirectoryName(dialog.FileName);
             }
         }, () => !BackupRunning));
 
