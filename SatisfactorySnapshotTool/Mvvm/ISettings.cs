@@ -1,4 +1,6 @@
-﻿namespace SatisfactorySnapshotTool.Mvvm
+﻿using System.ComponentModel;
+
+namespace SatisfactorySnapshotTool.Mvvm
 {
     public interface ISettings
     {
@@ -9,5 +11,7 @@
         string SavegamePath { get; }
 
         void Save();
+
+        event PropertyChangedEventHandler SettingChanged;
     }
 }

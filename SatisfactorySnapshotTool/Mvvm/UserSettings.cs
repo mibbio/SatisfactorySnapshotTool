@@ -2,6 +2,7 @@
 namespace SatisfactorySnapshotTool.Mvvm
 {
     using System;
+    using System.ComponentModel;
     using System.IO;
 
     public class UserSettings : ISettings
@@ -43,11 +44,20 @@ namespace SatisfactorySnapshotTool.Mvvm
             {
                 BackupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SatisfactoryBackups");
             }
+
+            Properties.Settings.Default.PropertyChanged += OnSettingChanged;
         }
 
         public void Save()
         {
             Properties.Settings.Default.Save();
+        }
+
+        public event PropertyChangedEventHandler SettingChanged;
+
+        private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
+        {
+            SettingChanged?.Invoke(this, e);
         }
     }
 }

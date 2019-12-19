@@ -54,28 +54,14 @@
         {
             _settings = settings ?? throw new ArgumentNullException();
             _checksumCache = new Dictionary<string, Tuple<Guid, string>>();
-            if (Directory.Exists(settings.BackupPath))
-            {
-                foreach (var path in Directory.EnumerateDirectories(settings.BackupPath))
-                {
-                    try
-                    {
-                        var model = new BackupModel(Guid.Parse(Path.GetFileNameWithoutExtension(path)));
-                        var json = File.ReadAllText(Path.Combine(path, "backup.json"));
-                        JsonConvert.PopulateObject(json, model);
-                        PopulateSavegames(model);
-                        Backups.Add(model);
-                    }
-                    catch (Exception ex) when (ex is FileNotFoundException || ex is FormatException || ex is IOException)
-                    {
-                        return;
-                    }
-                }
-                UpdateChecksumCache();
-            }
+            ReadBackups();
+
+            _settings.SettingChanged += OnSettingChanged;
 
             Backups.CollectionChanged += (s, e) => UpdateChecksumCache();
         }
+
+
         #endregion
 
         #region methods
@@ -428,7 +414,31 @@
                 foreach (var save in Directory.EnumerateFiles(subdir))
                 {
                     backupModel.AddSave(new SavegameHeader(save));
-                } 
+                }
+            }
+        }
+
+        private void ReadBackups()
+        {
+            if (Directory.Exists(_settings.BackupPath))
+            {
+                Backups.Clear();
+                foreach (var path in Directory.EnumerateDirectories(_settings.BackupPath))
+                {
+                    try
+                    {
+                        var model = new BackupModel(Guid.Parse(Path.GetFileNameWithoutExtension(path)));
+                        var json = File.ReadAllText(Path.Combine(path, "backup.json"));
+                        JsonConvert.PopulateObject(json, model);
+                        PopulateSavegames(model);
+                        Backups.Add(model);
+                    }
+                    catch (Exception ex) when (ex is FileNotFoundException || ex is FormatException || ex is IOException)
+                    {
+                        return;
+                    }
+                }
+                UpdateChecksumCache();
             }
         }
 
@@ -438,6 +448,18 @@
                 .SelectMany(dict => dict)
                 .GroupBy(pair => pair.Key)
                 .ToDictionary(group => group.Key, group => group.First().Value);
+        }
+
+        private void OnSettingChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "BackupPath":
+                    ReadBackups();
+                    break;
+                default:
+                    break;
+            }
         }
         #endregion
 
