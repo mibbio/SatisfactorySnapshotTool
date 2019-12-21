@@ -152,6 +152,11 @@
                 ShowNewFolderButton = true
             };
 
+            if (!string.IsNullOrEmpty(_settingsProvider.BackupPath) && Directory.Exists(_settingsProvider.BackupPath))
+            {
+                dialog.SelectedPath = _settingsProvider.BackupPath;
+            }
+
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 BackupPath = dialog.SelectedPath;
