@@ -1,6 +1,5 @@
 ﻿namespace SatisfactorySnapshotTool.Backup
 {
-    using Newtonsoft.Json;
 
     using SatisfactorySnapshotTool.Events;
     using SatisfactorySnapshotTool.Models;
@@ -9,6 +8,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -20,10 +20,6 @@
     {
         #region fields
         private const int _bufferSize = 1024 * 64;
-
-        private const string _backupGameSubdir = "game";
-
-        private const string _backupSaveSubdir = "saves";
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
 
@@ -54,14 +50,13 @@
         {
             _settings = settings ?? throw new ArgumentNullException();
             _checksumCache = new Dictionary<string, Tuple<Guid, string>>();
-            ReadBackups();
 
             _settings.SettingChanged += OnSettingChanged;
-
             Backups.CollectionChanged += (s, e) => UpdateChecksumCache();
+
+            BackupModel.SetBackupRoot(_settings.BackupPath);
+            ReadBackups();
         }
-
-
         #endregion
 
         #region methods
@@ -72,7 +67,7 @@
             // exp: "++FactoryGame+main-CL-109370"
             // stable: "++FactoryGame+rel-main-ea-bu1-slim-CL-109075"
             var backupGuid = Guid.NewGuid();
-            var targetDirectory = Path.Combine(_settings.BackupPath, backupGuid.ToString());
+            var backupDirectory = Path.Combine(_settings.BackupPath, backupGuid.ToString());
 
             _cts = new CancellationTokenSource();
 
@@ -85,7 +80,10 @@
                 var savesFileGroup = await GenerateFileGroup(rawSaves, _settings.SavegamePath, false, _cts.Token).ConfigureAwait(false);
 
                 OnBackupStep?.Invoke(this, new BackupEventArgs(BackupStep.CopyGameFile, gameFileGroup.FilesToCopy.Count));
-                var gameSize = await CopyFilesAsync(gameFileGroup, sourceRootPath, Path.Combine(targetDirectory, _backupGameSubdir), _cts.Token);
+                var gameSize = await CopyFilesAsync(gameFileGroup, sourceRootPath, Path.Combine(backupDirectory, BackupModel.BinarySubdir), _cts.Token);
+
+                OnBackupStep?.Invoke(this, new BackupEventArgs(BackupStep.CopySaveFile, savesFileGroup.FilesToCopy.Count));
+                var savesSize = await CopyFilesAsync(savesFileGroup, _settings.SavegamePath, Path.Combine(backupDirectory, BackupModel.SavesSubdir), _cts.Token);
 
                 // create backup metadata
                 GameBranch branch = gameFileGroup.Version.Contains("-ea-") ? GameBranch.Stable : GameBranch.Experimental;
@@ -94,30 +92,31 @@
                 // hardlink files
                 foreach (var dependency in gameFileGroup.Dependencies)
                 {
-                    var sourceFile = Path.Combine(targetDirectory, _backupGameSubdir, dependency.Key);
-                    var targetFile = Path.Combine(_settings.BackupPath, dependency.Value.ToString(), _backupGameSubdir, dependency.Key);
+                    var sourceFile = Path.Combine(backupDirectory, BackupModel.BinarySubdir, dependency.Key);
+                    var targetFile = Path.Combine(_settings.BackupPath, dependency.Value.ToString(), BackupModel.BinarySubdir, dependency.Key);
                     FileHelper.CreateHardLink(sourceFile, targetFile);
                     model.AddDependency(dependency.Value, dependency.Key);
                 }
 
-                OnBackupStep?.Invoke(this, new BackupEventArgs(BackupStep.CopySaveFile, savesFileGroup.FilesToCopy.Count));
-                var savesSize = await CopyFilesAsync(savesFileGroup, _settings.SavegamePath, Path.Combine(targetDirectory, _backupSaveSubdir), _cts.Token);
+                foreach (var saveFile in savesFileGroup.FilesToCopy)
+                {
+                    var path = Path.Combine(_settings.BackupPath, model.Guid.ToString(), BackupModel.SavesSubdir, saveFile);
+                    model.AddSavegame(new SavegameHeader(path));
+                }
 
                 model.AddChecksums(gameFileGroup.Checksums);
                 model.BackupSize = gameSize + savesSize;
-                PopulateSavegames(model);
+                model.Save(_settings.BackupPath);
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Backups.Add(model);
                 });
-
-                var json = JsonConvert.SerializeObject(model, Formatting.Indented);
-                File.WriteAllText(Path.Combine(targetDirectory, "backup.json"), json);
             }
             catch (Exception ex) when (ex is IOException || ex is TaskCanceledException)
             {
                 // rollback (delete already copied files)
-                if (Directory.Exists(targetDirectory)) Directory.Delete(targetDirectory, true);
+                if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
                 MessageBox.Show(ex.Message, "Backup not successfull", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
@@ -296,9 +295,10 @@
                 {
                     try
                     {
+                        var dependents = Backups.Where(bm => bm.Dependencies.ContainsKey(backup.Guid));
+                        Parallel.ForEach(dependents, depBackup => depBackup.RemoveDependency(backup.Guid));
                         Directory.Delete(backupDir, true);
                         Backups.Remove(backup);
-                        RecalculateBackupSizes(backup.Guid);
                         return true;
                     }
                     catch (Exception)
@@ -329,7 +329,7 @@
             }
 
             // copy backup saves to working dir
-            var backupSaveRoot = Path.Combine(_settings.BackupPath, backup.Guid.ToString(), _backupSaveSubdir);
+            var backupSaveRoot = Path.Combine(_settings.BackupPath, backup.Guid.ToString(), BackupModel.SavesSubdir);
             foreach (var dir in Directory.EnumerateDirectories(backupSaveRoot))
             {
                 var targetDir = Directory.CreateDirectory(Path.Combine(_settings.SavegamePath, Path.GetFileName(dir)));
@@ -339,7 +339,7 @@
                 }
             }
 
-            var workingDir = Path.Combine(_settings.BackupPath, backup.Guid.ToString(), _backupGameSubdir);
+            var workingDir = Path.Combine(_settings.BackupPath, backup.Guid.ToString(), BackupModel.BinarySubdir);
             var executable = Path.Combine(workingDir, "FactoryGame.exe");
             var psi = new ProcessStartInfo(executable, "-EpicPortal");
             psi.WorkingDirectory = workingDir;
@@ -381,42 +381,7 @@
             GameRunning = false;
         }
 
-        public void CancelBackup()
-        {
-            _cts.Cancel();
-        }
-
-        private void RecalculateBackupSizes(Guid deletedBackupGuid)
-        {
-            var dependents = Backups.Where(bm => bm.Dependencies.ContainsKey(deletedBackupGuid));
-
-            foreach (var bm in dependents)
-            {
-                var backupDir = Path.Combine(_settings.BackupPath, bm.Guid.ToString());
-                var additionalSize = bm.Dependencies[deletedBackupGuid].Sum(file =>
-                {
-                    var fi = new FileInfo(Path.Combine(backupDir, _backupGameSubdir, file));
-                    return fi.Length;
-                });
-                bm.BackupSize += additionalSize;
-                bm.Dependencies.Remove(deletedBackupGuid);
-
-                var json = JsonConvert.SerializeObject(bm, Formatting.Indented);
-                File.WriteAllText(Path.Combine(backupDir, "backup.json"), json);
-            }
-        }
-
-        private void PopulateSavegames(BackupModel backupModel)
-        {
-            var savesRoot = Path.Combine(_settings.BackupPath, backupModel.Guid.ToString(), _backupSaveSubdir);
-            foreach (var subdir in Directory.EnumerateDirectories(savesRoot))
-            {
-                foreach (var save in Directory.EnumerateFiles(subdir))
-                {
-                    backupModel.AddSave(new SavegameHeader(save));
-                }
-            }
-        }
+        public void CancelBackup() => _cts.Cancel();
 
         private void ReadBackups()
         {
@@ -427,15 +392,11 @@
                 {
                     try
                     {
-                        var model = new BackupModel(Guid.Parse(Path.GetFileNameWithoutExtension(path)));
-                        var json = File.ReadAllText(Path.Combine(path, "backup.json"));
-                        JsonConvert.PopulateObject(json, model);
-                        PopulateSavegames(model);
-                        Backups.Add(model);
+                        Backups.Add(BackupModel.Load(path));
                     }
-                    catch (Exception ex) when (ex is FileNotFoundException || ex is FormatException || ex is IOException)
+                    catch (Exception ex) when (ex is IOException || ex is ArgumentException)
                     {
-                        return;
+                        continue;
                     }
                 }
                 UpdateChecksumCache();
@@ -450,11 +411,12 @@
                 .ToDictionary(group => group.Key, group => group.First().Value);
         }
 
-        private void OnSettingChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
                 case "BackupPath":
+                    BackupModel.SetBackupRoot(_settings.BackupPath);
                     ReadBackups();
                     break;
                 default:
