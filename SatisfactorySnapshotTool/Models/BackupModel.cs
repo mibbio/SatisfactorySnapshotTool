@@ -238,7 +238,6 @@
                 path = Path.GetDirectoryName(path);
             }
             if (!Directory.Exists(path)) throw new ArgumentException("Path does not exist.");
-            Console.WriteLine("backup root changed to: {0}", path);
             _backupRootPath = path;
         }
     }
