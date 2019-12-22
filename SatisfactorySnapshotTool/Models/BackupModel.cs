@@ -20,7 +20,7 @@
     }
 
     [JsonObject(MemberSerialization = MemberSerialization.OptOut)]
-    public class BackupModel : NotifyPropertyChangedBase
+    public class BackupModel : NotifyPropertyChangedBase, IEquatable<BackupModel>
     {
         public const string BinarySubdir = "game";
 
@@ -155,23 +155,39 @@
             return Dependencies[guid].Add(file);
         }
 
-        public void RemoveDependency(Guid guid)
+        public void RemoveDependency(Guid dependecyGuid)
         {
             if (string.IsNullOrEmpty(_backupRootPath)) throw new InvalidOperationException("No backup root path set.");
-            if (Dependencies.ContainsKey(guid))
+            if (Dependencies.ContainsKey(dependecyGuid))
             {
                 var backupPath = Path.Combine(_backupRootPath, Guid.ToString(), BinarySubdir);
-                BackupSize += Dependencies[guid].Sum(file =>
+                BackupSize += Dependencies[dependecyGuid].Sum(file =>
                 {
                     var fi = new FileInfo(Path.Combine(backupPath, file));
                     return fi.Length;
                 });
-                Dependencies.Remove(guid);
+                Dependencies.Remove(dependecyGuid);
+                Save(_backupRootPath);
+
                 OnPropertyChanged(nameof(Dependencies));
                 OnPropertyChanged(nameof(DependencyCount));
+            }
+        }
 
-                var json = JsonConvert.SerializeObject(this, Formatting.Indented);
-                File.WriteAllText(Path.Combine(_backupRootPath, Guid.ToString(), "backup.json"), json);
+        public void SwitchDependecy(Guid oldDependencyGuid, Guid newDependencyGuid)
+        {
+            if (string.IsNullOrEmpty(_backupRootPath)) throw new InvalidOperationException("No backup root path set.");
+            if (Dependencies.TryGetValue(oldDependencyGuid, out var files))
+            {
+                Dependencies.Remove(oldDependencyGuid);
+                Dependencies.Add(newDependencyGuid, files);
+                Save(_backupRootPath);
+
+                OnPropertyChanged(nameof(Dependencies));
+            }
+            else
+            {
+                throw new ArgumentException(string.Format("{0} {1} does not exist.", nameof(oldDependencyGuid), oldDependencyGuid));
             }
         }
 
@@ -239,6 +255,22 @@
             }
             if (!Directory.Exists(path)) throw new ArgumentException("Path does not exist.");
             _backupRootPath = path;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as BackupModel);
+        }
+
+        public override int GetHashCode()
+        {
+            return Guid.GetHashCode();
+        }
+
+        public bool Equals(BackupModel other)
+        {
+            if (other == null) return false;
+            return Guid.Equals(other.Guid);
         }
     }
 }

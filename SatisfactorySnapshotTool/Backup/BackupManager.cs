@@ -293,18 +293,22 @@
                 var backupDir = Path.Combine(_settings.BackupPath, Backups[index].Guid.ToString());
                 if (Directory.Exists(backupDir))
                 {
-                    try
+                    var deps = Backups.Where(bm => bm.Dependencies.ContainsKey(backup.Guid));
+                    // update dependent backups if any
+                    if (deps.Any())
                     {
-                        var dependents = Backups.Where(bm => bm.Dependencies.ContainsKey(backup.Guid));
-                        Parallel.ForEach(dependents, depBackup => depBackup.RemoveDependency(backup.Guid));
-                        Directory.Delete(backupDir, true);
-                        Backups.Remove(backup);
-                        return true;
+                        var newRef = deps.First();
+                        var remainingDeps = deps.Skip(1).ToList();
+                        foreach (var dep in remainingDeps)
+                        {
+                            dep.SwitchDependecy(backup.Guid, newRef.Guid);
+                        }
+                        newRef.RemoveDependency(backup.Guid);
                     }
-                    catch (Exception)
-                    {
-                        return false;
-                    }
+
+                    // delete the backup itself
+                    Directory.Delete(backupDir, true);
+                    Backups.Remove(backup);
                 }
             }
             return false;
