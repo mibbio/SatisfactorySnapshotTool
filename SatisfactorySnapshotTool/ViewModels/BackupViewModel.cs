@@ -7,6 +7,8 @@
 
     using System;
     using System.Collections.ObjectModel;
+    using System.IO;
+    using System.Windows;
     using System.Windows.Input;
 
     public class BackupViewModel : ContentViewModel
@@ -56,5 +58,19 @@
         {
             await _backupManager.Launch(bm);
         }, bm => bm != null));
+
+        private ICommand _cmdCopySavegames;
+
+        public ICommand CmdCopySavegames => _cmdCopySavegames ?? (_cmdCopySavegames = new RelayCommand(() => {
+            var result = MessageBox.Show(
+                "This will overwrite your current savegames with same names.",
+                "Warning",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+            if (result == MessageBoxResult.OK)
+            {
+                _backupManager.CopySavegames(_selectedBackup);
+            }
+        }));
     }
 }

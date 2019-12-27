@@ -314,6 +314,26 @@
             return false;
         }
 
+        public void CopySavegames(BackupModel model)
+        {
+            foreach (var save in model.Saves)
+            {
+                var sourceDir = Path.Combine(_settings.BackupPath, model.Guid.ToString(), BackupModel.SavesSubdir);
+                foreach (var dir in Directory.EnumerateDirectories(sourceDir))
+                {
+                    foreach (var file in Directory.EnumerateFiles(dir))
+                    {
+                        var target = Path.Combine(_settings.SavegamePath, Path.GetFileName(dir), Path.GetFileName(file));
+                        if (!Directory.Exists(target))
+                        {
+                            Directory.CreateDirectory(target);
+                        }
+                        File.Copy(file, target, true);
+                    }
+                }
+            }
+        }
+
         public async Task Launch(BackupModel backup)
         {
             GameRunning = true;
